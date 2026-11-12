@@ -1,0 +1,29 @@
+name: Cross-Platform Build & Test
+
+on: [push]
+
+jobs:
+  linux-and-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and Run Unit/Fuzz Tests on Linux
+        run: |
+          python3 game/build_rom.py
+          cmake -B build
+          cmake --build build
+          ctest --test-dir build --output-on-failure
+
+  web-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mymindstorm/setup-emsdk@v14
+      - name: Compile to WebAssembly
+        run: |
+          emcc core/vm.c platforms/web_wasm.c -O2 --no-entry -s EXPORTED_FUNCTIONS="['_web_init','_web_tick','_web_get_tile','_web_is_win']" -o sokoban.wasm
+      - name: Upload WebAssembly Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sokoban-wasm
+          path: sokoban.wasm
