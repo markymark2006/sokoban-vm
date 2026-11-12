@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sokoban VM (WebAssembly)</title>
+</head>
+<body style="background:#111; color:#0f0; font-family:monospace; font-size:22px; text-align:center; padding-top:30px;">
+  <h3>SOKOBAN VM (WebAssembly)</h3>
+  <pre id="screen" style="display:inline-block; text-align:left; border:1px solid #333; padding:15px;">Loading WASM...</pre>
+  <p style="font-size:16px; color:#aaa;">Arrows / WASD: Move | R: Reset</p>
+  <script>
+    fetch('sokoban.wasm')
+      .then(res => {
+        if (!res.ok) throw new Error('Файл sokoban.wasm не найден в папке platforms!');
+        return res.arrayBuffer();
+      })
+      .then(bytes => WebAssembly.instantiate(bytes, { env: {} }))
+      .then(obj => {
+        const vm = obj.instance.exports;
+        vm.web_init();
+
+        function draw() {
+          vm.web_tick(0);
+          let out = "";
+          for (let y = 0; y < 10; y++) {
+            for (let x = 0; x < 12; x++) {
+              const code = vm.web_get_tile(x, y);
+              out += String.fromCharCode(code || 32) + " ";
+            }
+            out += "\n";
+          }
+          if (vm.web_is_win()) {
+            out += "\nYOU WIN! Press R to restart.";
+          }
+          document.getElementById("screen").textContent = out;
+        }
+
+        draw();
+
+        window.addEventListener("keydown", e => {
+          const map = {
+            ArrowUp: 1, KeyW: 1,
+            ArrowDown: 2, KeyS: 2,
+            ArrowLeft: 3, KeyA: 3,
+            ArrowRight: 4, KeyD: 4,
+            KeyR: 5
+          };
+          if (map[e.code]) {
+            e.preventDefault();
+            vm.web_tick(map[e.code]);
+            draw();
+          }
+        });
+      })
+      .catch(err => {
+        document.getElementById("screen").style.color = "#f55";
+        document.getElementById("screen").textContent = "Ошибка: " + err.message;
+      });
+  </script>
+</body>
+</html>
