@@ -1,2 +1,7 @@
-build/ 
-*.wasm 
+build/
+*.exe
+*.wasm
+*.o
+*.obj
+*.a
+__pycache__/
